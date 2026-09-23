@@ -18,7 +18,7 @@ variables:
   _TARGET_PHP: '8.4'
   DRUPAL_CORE: &drupal_core '11.4.x-dev'
   # Display Builder, UI Suite and Media Directories have no stable release yet.
-  MINIMUM_STABILITY_OVERRIDE: &minimum_stability 'alpha'
+  MINIMUM_STABILITY_OVERRIDE: &minimum_stability 'dev'
   # No PHP, CSS or PHPUnit tests here. The only JavaScript is the webship-js
   # test tooling, and the recipe YAML is checked by applying the recipe.
   SKIP_ESLINT: '1'
