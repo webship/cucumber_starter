@@ -1,0 +1,68 @@
+################
+# GitLab CI for the Cucumber Starter site template (a drupal-recipe project).
+#
+# The drupal.org GitLab templates build a Drupal site with this recipe in
+# recipes/cucumber_starter, then run composer-lint and cspell. The `recipe` job
+# below installs Drupal from the recipe to prove that it applies.
+# Documentation: https://project.pages.drupalcode.org/gitlab_templates/
+################
+include:
+  - project: $_GITLAB_TEMPLATES_REPO
+    ref: $_GITLAB_TEMPLATES_REF
+    file:
+      - '/includes/include.drupalci.main.yml'
+      - '/includes/include.drupalci.variables.yml'
+      - '/includes/include.drupalci.workflows.yml'
+
+variables:
+  _TARGET_PHP: '8.4'
+  DRUPAL_CORE: &drupal_core '11.4.x-dev'
+  # Display Builder, UI Suite and Media Directories have no stable release yet.
+  MINIMUM_STABILITY_OVERRIDE: &minimum_stability 'alpha'
+  # No PHP, CSS or PHPUnit tests here. The only JavaScript is the webship-js
+  # test tooling, and the recipe YAML is checked by applying the recipe.
+  SKIP_ESLINT: '1'
+  SKIP_PHPCS: '1'
+  SKIP_PHPSTAN: '1'
+  SKIP_PHPUNIT: '1'
+  SKIP_STYLELINT: '1'
+  # Node modules are only needed by cspell, which installs them itself.
+  _COMPOSER_YARN_INSTALL: '0'
+  # composer-lint and cspell must pass.
+  _ALL_VALIDATE_ALLOW_FAILURE: '0'
+
+composer:
+  variables:
+    # The composer job sets its own values: use the global ones.
+    DRUPAL_CORE: *drupal_core
+    MINIMUM_STABILITY_OVERRIDE: *minimum_stability
+
+# Install Drupal from the recipe, and check the result.
+recipe:
+  extends: .testing-job-base
+  needs: [composer]
+  # Only the database: no browser is needed.
+  services:
+    - name: $_CONFIG_DOCKERHUB_ROOT/$_TARGET_DB_TYPE-$_TARGET_DB_VERSION:$_TARGET_DB_IMAGE_TAG
+      alias: database
+  script:
+    - cd $CI_PROJECT_DIR
+    - test "$COMPOSER_END_CODE" = "0"
+    # Run the Drush PHP script directly: vendor/bin/drush is a shell proxy.
+    - export DRUSH="php -d memory_limit=-1 $CI_PROJECT_DIR/vendor/drush/drush/drush.php --root=$CI_PROJECT_DIR/$_WEB_ROOT"
+    - $DRUSH site:install $CI_PROJECT_DIR/recipes/$PROJECT_NAME -y
+      --db-url=mysql://$MYSQL_USER:$MYSQL_PASSWORD@database/$MYSQL_DATABASE
+      --account-name=admin --account-pass=admin --site-name="$PROJECT_NAME"
+    - $DRUSH status --fields=drupal-version,db-status,theme
+    # The Cucumber content: features with their Gherkin scripts, and the
+    # components, products and projects a test suite is organised by.
+    - test "$($DRUSH config:get media.type.feature id --format=string)" = "feature"
+    - test "$($DRUSH config:get node.type.component type --format=string)" = "component"
+    - test "$($DRUSH config:get node.type.product type --format=string)" = "product"
+    - test "$($DRUSH config:get node.type.project type --format=string)" = "project"
+    - test "$($DRUSH config:get taxonomy.vocabulary.feature_directory vid --format=string)" = "feature_directory"
+    # The automated testing workflow, the dashboards and the test screens.
+    - test "$($DRUSH config:get workflows.workflow.automated_testing id --format=string)" = "automated_testing"
+    - test "$($DRUSH config:get system.site page.front --format=string)" = "/dashboard/default_dashboard"
+    - $DRUSH pm:list --status=enabled --format=list | grep -qx cucumber_ui
+    - test "$($DRUSH config:get system.theme admin --format=string)" = "gin"
