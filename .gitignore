@@ -1,0 +1,6 @@
+node_modules/
+tests/reports/*
+!tests/reports/README.md
+tests/screenshots/
+tests/videos/
+.playwright-mcp/

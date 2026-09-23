@@ -1,0 +1,65 @@
+name: 'Cucumber Starter'
+description: 'The Cucumber site template: the Cucumber Automated Functional Acceptance Testing Management system — features with their Gherkin scripts, components, products and projects, the Cucumber user roles and the Cucumber dashboards. Built with UI Suite and Display Builder on top of Drupal, with HTMX. No Layout Builder displays.'
+type: 'Site'
+# Site template metadata for the Cucumber and Drupal CMS installers.
+extra:
+  drupal_cms_installer:
+    creator: 'Webship'
+recipes:
+  # The core of Cucumber, first: the Feature media items with their Gherkin
+  # scripts, the Feature Directory vocabulary, the views, the automated
+  # testing workflow and the dashboards. It brings the modules the recipes
+  # below act on.
+  - modules/contrib/cucumber_core/recipes/default
+  # The Features link in the administration menu, and the default content.
+  - modules/contrib/cucumber_default_content/recipes/default
+  # The content types a test suite is organised by.
+  - modules/contrib/cucumber_recipes/cucumber_components/recipes/default
+  - modules/contrib/cucumber_recipes/cucumber_products/recipes/default
+  - modules/contrib/cucumber_recipes/cucumber_projects/recipes/default
+  # The role list, after the content the roles hold permissions on.
+  - modules/contrib/cucumber_user_roles/recipes/default
+install:
+  # The Cucumber test screens, on Drupal core's HTMX.
+  - cucumber_ui
+  # Administration theme.
+  - gin
+config:
+  # Only create what a site does not have yet: applying this recipe twice,
+  # or on a site that already has this configuration, is a no-op.
+  strict: false
+  actions:
+    user.settings:
+      simpleConfigUpdate:
+        register: admin_only
+    system.site:
+      simpleConfigUpdate:
+        page.front: '/dashboard/default_dashboard'
+        slogan: 'Manage the acceptance testing of a project'
+    node.settings:
+      simpleConfigUpdate:
+        use_admin_theme: true
+    system.theme:
+      simpleConfigUpdate:
+        admin: gin
+    user.role.admin:
+      # Granted here, once every module that defines these permissions is
+      # installed: granting them in the role's own configuration would
+      # install the role before the permissions exist.
+      createIfNotExists:
+        label: Admin
+        is_admin: false
+      grantPermissions:
+        - 'access content'
+        - 'access content overview'
+        - 'revert all revisions'
+        - 'view all revisions'
+        - 'access features page'
+        - 'create feature media'
+        - 'edit any feature media'
+        - 'can view admin_dashboard dashboard'
+    user.role.authenticated:
+      # The front page and the login redirect are the default dashboard, so
+      # every signed-in user must be able to view it.
+      grantPermissions:
+        - 'can view default_dashboard dashboard'
