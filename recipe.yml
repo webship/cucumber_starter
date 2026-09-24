@@ -41,6 +41,9 @@ config:
         use_admin_theme: true
     system.theme:
       simpleConfigUpdate:
+        # Cucumber is an administration application: the same theme front and
+        # back, so the dashboards and the test screens look the same.
+        default: gin
         admin: gin
     user.role.admin:
       # Granted here, once every module that defines these permissions is
