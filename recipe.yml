@@ -22,12 +22,26 @@ recipes:
 install:
   # The Cucumber test screens, on Drupal core's HTMX.
   - cucumber_ui
-  # Administration theme.
-  - gin
+  # The theme of Cucumber: UIkit Admin, front and back.
+  - uikit_admin
 config:
   # Only create what a site does not have yet: applying this recipe twice,
   # or on a site that already has this configuration, is a no-op.
   strict: false
+  import:
+    # A recipe installs a theme without its optional blocks: import the
+    # blocks of UIkit Admin, so its pages have their title, tabs, actions and
+    # messages.
+    uikit_admin:
+      - block.block.uikit_admin_branding
+      - block.block.uikit_admin_breadcrumbs
+      - block.block.uikit_admin_content
+      - block.block.uikit_admin_help
+      - block.block.uikit_admin_local_actions
+      - block.block.uikit_admin_messages
+      - block.block.uikit_admin_page_title
+      - block.block.uikit_admin_primary_local_tasks
+      - block.block.uikit_admin_secondary_local_tasks
   actions:
     user.settings:
       simpleConfigUpdate:
@@ -43,8 +57,8 @@ config:
       simpleConfigUpdate:
         # Cucumber is an administration application: the same theme front and
         # back, so the dashboards and the test screens look the same.
-        default: gin
-        admin: gin
+        default: uikit_admin
+        admin: uikit_admin
     user.role.admin:
       # Granted here, once every module that defines these permissions is
       # installed: granting them in the role's own configuration would

@@ -65,4 +65,7 @@ recipe:
     - test "$($DRUSH config:get workflows.workflow.automated_testing id --format=string)" = "automated_testing"
     - test "$($DRUSH config:get system.site page.front --format=string)" = "/dashboard/default_dashboard"
     - $DRUSH pm:list --status=enabled --format=list | grep -qx cucumber_ui
-    - test "$($DRUSH config:get system.theme admin --format=string)" = "gin"
+    # UIkit Admin is the theme, front and back, with its blocks.
+    - test "$($DRUSH config:get system.theme default --format=string)" = "uikit_admin"
+    - test "$($DRUSH config:get system.theme admin --format=string)" = "uikit_admin"
+    - test "$($DRUSH config:get block.block.uikit_admin_content region --format=string)" = "content"
