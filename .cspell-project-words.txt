@@ -1,3 +1,4 @@
 infobars
+networkidle
 organised
 webship

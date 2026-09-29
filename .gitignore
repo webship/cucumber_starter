@@ -3,4 +3,6 @@ tests/reports/*
 !tests/reports/README.md
 tests/screenshots/
 tests/videos/
+screenshots/
+videos/
 .playwright-mcp/

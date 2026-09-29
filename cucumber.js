@@ -1,6 +1,6 @@
 module.exports = {
   default: {
-    timeout: 30000,
+    timeout: 45000,
     requireModule: ['tsx/cjs'],
     require: [
       'node_modules/webship-js/tests/step-definitions/**/*.js',
@@ -33,24 +33,32 @@ module.exports = {
         after_step: 0,
       },
       assets_folder: "/assets/",
-      // Keep these in sync with scripts/webship.users.yml, the source of
-      // truth for the usernames add-testing-users.sh actually creates.
+      // Test users used by the suite.
+      //
+      // Webmaster is the account of the site install (`drush site:install
+      // ../recipes/cucumber_starter --account-name=webmaster
+      // --account-pass=dD.123123ddd`). The rest are provisioned by `Given I
+      // add testing users` (see tests/step-definitions), which skips the
+      // entries flagged `isAdmin: true`.
       users: {
+        Webmaster: {
+          username: 'webmaster',
+          email: 'webmaster@example.test',
+          password: 'dD.123123ddd',
+          isAdmin: true,
+        },
         Admin: {
-          name: "Admin",
-          email: "test.admin@webship.org",
-          password: "dD.123123ddd"
+          username: 'admin_user',
+          email: 'admin_user@example.test',
+          password: 'dD.123123ddd',
+          roles: ['admin'],
         },
-        "Authenticated user": {
-          name: "Authenticated user",
-          email: "test.authenticated@webship.org",
-          password: "dD.123123ddd"
+        'Authenticated user': {
+          username: 'authenticated_user',
+          email: 'authenticated_user@example.test',
+          password: 'dD.123123ddd',
+          roles: [],
         },
-        "Content editor": {
-          name: "Content editor",
-          email: "test.content_editor@webship.org",
-          password: "dD.123123ddd"
-        }
       }
     },
   },

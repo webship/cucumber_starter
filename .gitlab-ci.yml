@@ -69,3 +69,18 @@ recipe:
     - test "$($DRUSH config:get system.theme default --format=string)" = "uikit_admin"
     - test "$($DRUSH config:get system.theme admin --format=string)" = "uikit_admin"
     - test "$($DRUSH config:get block.block.uikit_admin_content region --format=string)" = "content"
+    # Anonymous visitors are sent to the log in page, and the pages of a
+    # password reset stay open.
+    - $DRUSH pm:list --status=enabled --format=list | grep -qx anonymous_redirect
+    - test "$($DRUSH config:get anonymous_redirect.settings enable_redirect --format=string)" = "1"
+    - test "$($DRUSH config:get anonymous_redirect.settings redirect_url --format=string)" = "/user/login"
+    # The Admin role writes a feature and moves it through the workflow, and
+    # holds no permission that administers the site.
+    - $DRUSH config:get user.role.admin permissions --format=json > admin-permissions.json
+    - grep -q '"use text format gherkin"' admin-permissions.json
+    - grep -q '"use automated_testing transition back_to_draft"' admin-permissions.json
+    - grep -q '"use automated_testing transition implemented"' admin-permissions.json
+    - grep -q '"create product content"' admin-permissions.json
+    - test "$(grep -c 'administer ' admin-permissions.json)" = "0"
+    # The Features page asks for its own permission.
+    - test "$($DRUSH config:get views.view.features display.default.display_options.access.options.perm --format=string)" = "access features page"

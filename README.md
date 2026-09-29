@@ -15,25 +15,25 @@ With the [Cucumber](https://www.drupal.org/project/cucumber_project) project tem
 ```shell
 ddev config --project-type=drupal --docroot=web
 ddev start
-ddev composer create-project drupal/cucumber_project:~12.0 .
+ddev composer create-project drupal/cucumber_project:~12.0
 ddev restart
+ddev drush site:install ../recipes/cucumber_starter --account-name=webmaster --account-pass=<password> --site-name="<site name>" -y
 ddev launch
 ```
 
-The Cucumber installer lists the site templates: choose Cucumber Starter.
-
-From the command line:
-
-```shell
-ddev drush site:install cucumber -y
-```
+The project template places this site template in `recipes/cucumber_starter`.
 
 On an installed site:
 
 ```shell
 ddev composer require drupal/cucumber_starter
-ddev drush recipe ../recipes/contrib/cucumber_starter
+ddev drush recipe ../recipes/cucumber_starter
 ```
+
+The site asks everybody to sign in: a visitor who is not signed in is sent to `/user/login`. The Admin role
+writes features with their Gherkin scripts, moves them through the automated testing workflow and keeps the
+products, the components and the projects. The other roles are switched on at
+`/admin/config/development/cucumber-user-roles/settings`.
 
 ## What you get
 
