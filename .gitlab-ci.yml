@@ -84,3 +84,21 @@ recipe:
     - test "$(grep -c 'administer ' admin-permissions.json)" = "0"
     # The Features page asks for its own permission.
     - test "$($DRUSH config:get views.view.features display.default.display_options.access.options.perm --format=string)" = "access features page"
+
+.composer-base:
+  variables:
+    # Drupal core's own Yarn 4.9.1 would read the project .yarnrc.yml (Yarn >= 4.14 keys) too.
+    YARN_RC_FILENAME: .yarnrc.core.yml
+    YARN_NODE_LINKER: node-modules
+
+stylelint:
+  variables:
+    # Drupal core's own Yarn 4.9.1 would read the project .yarnrc.yml (Yarn >= 4.14 keys) too.
+    YARN_RC_FILENAME: .yarnrc.core.yml
+    YARN_NODE_LINKER: node-modules
+
+cspell:
+  variables:
+    # cspell installs Drupal core's node_modules with core's Yarn 4.9.1, which reads the project .yarnrc.yml too.
+    YARN_RC_FILENAME: .yarnrc.core.yml
+    YARN_NODE_LINKER: node-modules
