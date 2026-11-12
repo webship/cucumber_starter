@@ -48,7 +48,7 @@ config:
         register: admin_only
     system.site:
       simpleConfigUpdate:
-        page.front: '/dashboard/default_dashboard'
+        page.front: '/webdashboard/default_dashboard'
         slogan: 'Manage the acceptance testing of a project'
     node.settings:
       simpleConfigUpdate:
@@ -74,9 +74,9 @@ config:
         - 'access features page'
         - 'create feature media'
         - 'edit any feature media'
-        - 'can view admin_dashboard dashboard'
+        - 'can view admin_dashboard webdashboard'
     user.role.authenticated:
       # The front page and the login redirect are the default dashboard, so
       # every signed-in user must be able to view it.
       grantPermissions:
-        - 'can view default_dashboard dashboard'
+        - 'can view default_dashboard webdashboard'

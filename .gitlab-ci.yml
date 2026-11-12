@@ -63,7 +63,8 @@ recipe:
     - test "$($DRUSH config:get taxonomy.vocabulary.feature_directory vid --format=string)" = "feature_directory"
     # The automated testing workflow, the dashboards and the test screens.
     - test "$($DRUSH config:get workflows.workflow.automated_testing id --format=string)" = "automated_testing"
-    - test "$($DRUSH config:get system.site page.front --format=string)" = "/dashboard/default_dashboard"
+    - test "$($DRUSH config:get system.site page.front --format=string)" = "/webdashboard/default_dashboard"
+    - test "$($DRUSH config:get webdashboard.webdashboard.default_dashboard id --format=string)" = "default_dashboard"
     - $DRUSH pm:list --status=enabled --format=list | grep -qx cucumber_ui
     # UIkit Admin is the theme, front and back, with its blocks.
     - test "$($DRUSH config:get system.theme default --format=string)" = "uikit_admin"
@@ -81,6 +82,10 @@ recipe:
     - grep -q '"use automated_testing transition back_to_draft"' admin-permissions.json
     - grep -q '"use automated_testing transition implemented"' admin-permissions.json
     - grep -q '"create product content"' admin-permissions.json
+    # The dashboards are Web Dashboard ones: the Admin role views its own, and
+    # every signed-in person views the default one, which is the front page.
+    - grep -q '"can view admin_dashboard webdashboard"' admin-permissions.json
+    - $DRUSH config:get user.role.authenticated permissions --format=json | grep -q '"can view default_dashboard webdashboard"'
     - test "$(grep -c 'administer ' admin-permissions.json)" = "0"
     # The Features page asks for its own permission.
     - test "$($DRUSH config:get views.view.features display.default.display_options.access.options.perm --format=string)" = "access features page"
