@@ -3,6 +3,9 @@ Feature: The Admin role writes a feature and moves it through the workflow
   I want to write a feature with its Gherkin script and move it from step to step
   So that the listings show the state every feature is in
 
+  The Admin role removes the feature and the product it made in the last two
+  scenarios, so a second run starts from the same site.
+
   Background:
     Given I am a logged in user with the "Admin" user
 
@@ -42,7 +45,15 @@ Feature: The Admin role writes a feature and moves it through the workflow
   Scenario: The Admin role adds a product
     When I navigate to "/node/add/product"
      And I fill in "Name" with "Starter product"
-     And I press "Save"
+     And I save the content
     Then I should see "Starter product has been created."
     When I navigate to "/products"
     Then I should see "Starter product"
+    When I delete the content item I created
+    Then I should see "Starter product has been deleted."
+
+  Scenario: The Admin role removes the feature it wrote
+    When I navigate to "/features?name=Starter%20workflow%20feature"
+     And I open the "Delete" operation in the "Starter workflow feature" row
+     And I confirm the deletion
+    Then I should see "The media item Starter workflow feature has been deleted."

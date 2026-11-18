@@ -3,7 +3,8 @@
 #
 # The drupal.org GitLab templates build a Drupal site with this recipe in
 # recipes/cucumber_starter, then run composer-lint and cspell. The `recipe` job
-# below installs Drupal from the recipe to prove that it applies.
+# below installs Drupal from the recipe to prove that it applies, and the
+# `webship-js-test` job runs the webship-js suite on a site installed from it.
 # Documentation: https://project.pages.drupalcode.org/gitlab_templates/
 ################
 include:
@@ -89,6 +90,73 @@ recipe:
     - test "$(grep -c 'administer ' admin-permissions.json)" = "0"
     # The Features page asks for its own permission.
     - test "$($DRUSH config:get views.view.features display.default.display_options.access.options.perm --format=string)" = "access features page"
+
+# The webship-js suite (package.json, cucumber.js, tests/) on a site installed
+# from the recipe. The site build creates the accounts of cucumber.js
+# (worldParameters.users), with passwords made for this job: the suite only
+# logs in, and removes what it creates.
+webship-js-test:
+  extends: .testing-job-base
+  needs: [composer]
+  # Only the database: Playwright brings its own Chromium.
+  services:
+    - name: $_CONFIG_DOCKERHUB_ROOT/$_TARGET_DB_TYPE-$_TARGET_DB_VERSION:$_TARGET_DB_IMAGE_TAG
+      alias: database
+  variables:
+    DRUPAL_ADMIN_USER: "webmaster"
+    DRUPAL_ADMIN_MAIL: "webmaster@example.test"
+    CUCUMBER_ADMIN_USER: "admin_user"
+    CUCUMBER_ADMIN_MAIL: "admin_user@example.test"
+    DRUPAL_AUTHENTICATED_USER: "authenticated_user"
+    DRUPAL_AUTHENTICATED_MAIL: "authenticated_user@example.test"
+    LAUNCH_URL: "http://localhost"
+    FORCE_COLOR: "1"
+    # No yarn.lock is committed: let Yarn 4 write one in the job.
+    YARN_ENABLE_IMMUTABLE_INSTALLS: "false"
+  script:
+    - cd $CI_PROJECT_DIR
+    - test "$COMPOSER_END_CODE" = "0"
+    - export DRUSH="php -d memory_limit=-1 $CI_PROJECT_DIR/vendor/drush/drush/drush.php --root=$CI_PROJECT_DIR/$_WEB_ROOT"
+    # Test account passwords, for this job only.
+    - export DRUPAL_ADMIN_PASS=$(php -r "echo bin2hex(random_bytes(12));")
+    - export CUCUMBER_ADMIN_PASS=$(php -r "echo bin2hex(random_bytes(12));")
+    - export DRUPAL_AUTHENTICATED_PASS=$(php -r "echo bin2hex(random_bytes(12));")
+    # The site, from the recipe, with the Webmaster account.
+    - $DRUSH site:install $CI_PROJECT_DIR/recipes/$PROJECT_NAME -y
+      --db-url=mysql://$MYSQL_USER:$MYSQL_PASSWORD@database/$MYSQL_DATABASE
+      --account-name="$DRUPAL_ADMIN_USER" --account-mail="$DRUPAL_ADMIN_MAIL" --account-pass="$DRUPAL_ADMIN_PASS"
+      --site-name="Cucumber Starter Test"
+    # The other accounts: a member of the Admin role and one without a role.
+    - $DRUSH user:create "$CUCUMBER_ADMIN_USER" --mail="$CUCUMBER_ADMIN_MAIL" --password="$CUCUMBER_ADMIN_PASS"
+    - $DRUSH user:role:add admin "$CUCUMBER_ADMIN_USER"
+    - $DRUSH user:create "$DRUPAL_AUTHENTICATED_USER" --mail="$DRUPAL_AUTHENTICATED_MAIL" --password="$DRUPAL_AUTHENTICATED_PASS"
+    # A test runner has no mail server: collect the mails, so the password
+    # request returns at once.
+    - $DRUSH config:set system.mail interface.default test_mail_collector -y
+    # Apache serves the site at http://localhost.
+    - mkdir -p $CI_PROJECT_DIR/$_WEB_ROOT/sites/default/files
+    - chown -R www-data:www-data $CI_PROJECT_DIR/$_WEB_ROOT/sites/default/files
+    - rm -rf /var/www/html && ln -s $CI_PROJECT_DIR/$_WEB_ROOT /var/www/html
+    - service apache2 start
+    # Node.js 24, the packages of package.json and Chromium. webship-js's
+    # install script may write a cucumber.js of its own: keep this one.
+    - curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+    - apt-get install -y nodejs
+    - cp cucumber.js .cucumber.js.bak
+    - corepack enable
+    - yarn install
+    - cp .cucumber.js.bak cucumber.js && rm .cucumber.js.bak
+    - ./node_modules/.bin/playwright install --with-deps chromium
+    # Every step resolves, then the run.
+    - ./node_modules/.bin/cucumber-js --config cucumber.js --dry-run
+    - ./node_modules/.bin/cucumber-js --config cucumber.js --tags "not @wip"
+  artifacts:
+    when: always
+    paths:
+      - tests/reports/
+      - tests/screenshots/
+      - tests/videos/
+    expire_in: 7 days
 
 .composer-base:
   variables:

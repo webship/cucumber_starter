@@ -1,20 +1,54 @@
+// The webship-js configuration of this project, from the one `npx init-webship-js`
+// writes (webship-js 2.0.12), with @webship-js/drupal-core-steps and @webship-js/drupal-cms-steps
+// and the test accounts added. How to run it: tests/README.md.
+
+// A feature file, a scenario (file:line), a folder or a rerun file named on
+// the command line of cucumber-js runs alone (cucumber-js 12 would add it to
+// the paths below): `yarn test tests/features/02-01-01-anonymous-sign-in.feature`.
+const OPTIONS_WITH_A_VALUE = new Set([
+  '-c', '--config', '-f', '--format', '--format-options', '--i18n-keywords',
+  '-i', '--import', '-l', '--loader', '--language', '--name', '--order',
+  '-p', '--profile', '--parallel', '--plugin', '--plugin-options',
+  '-r', '--require', '--require-module', '--retry', '--retry-tag-filter',
+  '--shard', '-t', '--tags', '--world-parameters',
+]);
+
+function commandLinePaths() {
+  if (!/cucumber(-js|\.js)?$/.test(String(process.argv[1] || ''))) return [];
+  const args = process.argv.slice(2);
+  const paths = [];
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i].startsWith('-')) {
+      if (OPTIONS_WITH_A_VALUE.has(args[i])) i += 1;
+    } else {
+      paths.push(args[i]);
+    }
+  }
+  return paths;
+}
+
+// FEATURES=tests/features/a.feature,tests/features/b.feature runs a subset too.
+function featurePaths() {
+  if (process.env.FEATURES) return process.env.FEATURES.split(',');
+  return commandLinePaths().length ? [] : ['tests/features/**/*.feature'];
+}
+
 module.exports = {
   default: {
-    timeout: 45000,
+    timeout: 30000,                                                     // Overridden by webship-js's setDefaultTimeout (45s); raise it with WEBSHIP_STEP_TIMEOUT.
     requireModule: ['tsx/cjs'],
     require: [
-      'node_modules/webship-js/tests/step-definitions/**/*.js',
-      'node_modules/@webship-js/drupal-core-steps/tests/step-definitions/**/*.js', // @webship-js/drupal-core-steps: login by handle, the testing users, named pages, messages, listings, the editor, the media library, access control, site structure.
+      'node_modules/webship-js/tests/step-definitions/**/*.js',          // Webship-js core step definitions (auto HTML report on exit; disable: WEBSHIP_REPORT_DISABLE=1).
+      'node_modules/@webship-js/drupal-core-steps/tests/step-definitions/**/*.js', // @webship-js/drupal-core-steps: the login by handle, access control, content, the site structure.
       'node_modules/@webship-js/drupal-cms-steps/tests/step-definitions/**/*.js',  // @webship-js/drupal-cms-steps: the dashboard, site templates, the cookie consent, Drupal Canvas.
-      'tests/step-definitions/**/*.js',
+      'tests/step-definitions/**/*.js',                                  // This project's own steps.
     ],
-    paths: ['tests/features/**/*.feature'],
+    paths: featurePaths(),
     format: [
       '@cucumber/pretty-formatter',
       'json:tests/reports/cucumber_report.json',
     ],
     formatOptions: {
-      colorsEnabled: true,
       theme: {
         'feature keyword': ['bold', 'blue'],
         'feature name': ['blue', 'underline'],
@@ -26,7 +60,35 @@ module.exports = {
       },
     },
     worldParameters: {
-      launchUrl: process.env.LAUNCH_URL || 'http://localhost',
+      launchUrl: process.env.LAUNCH_URL || 'http://localhost:8080',
+      // A login form protected by a time limit (Honeypot) refuses a quick submit:
+      // the login by handle waits this long (milliseconds) before it submits.
+      loginWait: parseInt(process.env.DRUPAL_LOGIN_WAIT || '0', 10),
+      // "I wait out the form time limit" waits this long (milliseconds).
+      formWait: parseInt(process.env.DRUPAL_FORM_WAIT || '5000', 10),
+      // The accounts the features log in as, by handle. The site build creates
+      // them (tests/README.md); the suite never creates or deletes accounts.
+      // Credentials come from the environment: CHANGE_ME is a placeholder.
+      users: {
+        Webmaster: {
+          username: process.env.DRUPAL_ADMIN_USER || 'webmaster',
+          password: process.env.DRUPAL_ADMIN_PASS || 'CHANGE_ME',
+          email: process.env.DRUPAL_ADMIN_MAIL || 'webmaster@example.test',
+          isAdmin: true,
+        },
+        Admin: {
+          username: process.env.CUCUMBER_ADMIN_USER || 'admin_user',
+          password: process.env.CUCUMBER_ADMIN_PASS || 'CHANGE_ME',
+          email: process.env.CUCUMBER_ADMIN_MAIL || 'admin_user@example.test',
+          roles: ['admin'],
+        },
+        'Authenticated user': {
+          username: process.env.DRUPAL_AUTHENTICATED_USER || 'authenticated_user',
+          password: process.env.DRUPAL_AUTHENTICATED_PASS || 'CHANGE_ME',
+          email: process.env.DRUPAL_AUTHENTICATED_MAIL || 'authenticated_user@example.test',
+          roles: [],
+        },
+      },
       minWaitTime: {
         page: 3000,
         before_scenario: 0,
@@ -34,34 +96,49 @@ module.exports = {
         before_step: 0,
         after_step: 0,
       },
-      assets_folder: "/assets/",
-      // Test users used by the suite.
-      //
-      // Webmaster is the account of the site install (`drush site:install
-      // ../recipes/cucumber_starter --account-name=webmaster
-      // --account-pass=dD.123123ddd`). The rest are provisioned by `Given I
-      // add testing users` (see tests/step-definitions), which skips the
-      // entries flagged `isAdmin: true`.
-      users: {
-        Webmaster: {
-          username: 'webmaster',
-          email: 'webmaster@example.test',
-          password: 'dD.123123ddd',
-          isAdmin: true,
+      selectors: {
+        css: {},
+        xpath: {},
+        filesPath: './tests/selectors/',
+        files: [],
+        // Named viewport sizes for the viewing-the-site and set-the-viewport
+        // steps and the @mobile / @desktop tags (built in: xs..xxxl, mobile,
+        // tablet, desktop). Without a desktop here, @desktop opens at the
+        // breakpoint marked default: true.
+        breakpoints: {
+          xs:   { width: 375,  height: 667  },
+          sm:   { width: 576,  height: 800  },
+          md:   { width: 768,  height: 1024 },
+          lg:   { width: 992,  height: 768  },
+          xl:   { width: 1200, height: 900, default: true },
+          xxl:  { width: 1400, height: 900  },
+          xxxl: { width: 1920, height: 1080 },
         },
-        Admin: {
-          username: 'admin_user',
-          email: 'admin_user@example.test',
-          password: 'dD.123123ddd',
-          roles: ['admin'],
-        },
-        'Authenticated user': {
-          username: 'authenticated_user',
-          email: 'authenticated_user@example.test',
-          password: 'dD.123123ddd',
-          roles: [],
-        },
-      }
+      },
+      screenshot: {
+        dir: './tests/screenshots',
+        purge: false,
+        onFailed: true,
+        onEveryStep: false,
+        alwaysFullscreen: false,
+        failedPrefix: 'failed_',
+        filenamePattern: '{datetime}.{feature_file}.feature_{step_line}.{ext}',
+        filenamePatternFailed: '{failed_prefix}{datetime}.{feature_file}.feature_{step_line}.{ext}',
+        infoTypes: '',
+      },
+      video: {
+        mode: 'on-failure',
+        dir: './tests/videos',
+        size: { width: 1280, height: 720 },
+        filenamePattern: '{datetime}.{feature_file}.{scenario}.{status}.{ext}',
+      },
+      javascript: {
+        mode: 'warn',
+        levels: ['error'],
+        ignore: '',
+        beforeScenario: false,
+        afterScenario: true,
+      },
     },
   },
 };

@@ -9,15 +9,14 @@ Feature: Every role has the navigation of its work and a way out
     Then I should see a ".uikit-admin-shell" element by attr
      And I should see "Log out" in the ".uikit-admin-rail__logout" element
      And I should not see "Features" in the ".uikit-admin-rail__body" element
-    When I navigate to "/features"
-    Then I should see "Access denied"
+     And I should be denied access to "/features"
 
   Scenario Outline: The Admin role follows the "<link>" link of the navigation
     Given I am a logged in user with the "Admin" user
     When I set the viewport size to 1280x900
      And I follow "<link>"
     Then the path should be "<path>"
-     And I should not see "Access denied"
+     And the page should return HTTP status 200
      And I should not see "Insert selected"
 
     Examples:

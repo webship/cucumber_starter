@@ -2,21 +2,17 @@
  * @file
  * Step definitions for the Cucumber Starter site template.
  *
- * The generic steps come from webship-js; keep this file for the steps that
- * only make sense for this site template.
+ * The generic steps come from webship-js and the Drupal step packs (the login
+ * by handle, access checks, content); keep this file for the steps that only
+ * make sense for this site template.
  */
 
-const path = require('path');
-const { Before, Given, When } = require('@cucumber/cucumber');
-
-Before(function () {
-  // Serve the attachments of this suite, not the webship-js defaults.
-  this.assetsFolder = path.join(process.cwd(), 'tests', 'assets') + path.sep;
-});
+const { When } = require('@cucumber/cucumber');
 
 /**
- * Set the content of the Ace editor that replaced a textarea, then wait for
- * the editor to write it back to the textarea.
+ * Set the content of the Ace editor that replaced a textarea, then wait until
+ * the Ace Editor module has written it back to that textarea (it does so on
+ * the editor's change event, debounced), so the form submits the new script.
  *
  * Example #1: When I fill in the Ace editor with:
  * Example #2: And I fill in the Ace editor with:
@@ -35,5 +31,20 @@ When(/^(?:I |we )?fill in the Ace editor with:$/, async function (text) {
       .edit(document.querySelector('.ace_editor'))
       .session.setValue(value);
   }, text);
-  await this.page.waitForTimeout(700);
+  // The editor's container is "<textarea id>-ace-editor".
+  await this.page.waitForFunction(
+    () => {
+      const editor = document.querySelector('.ace_editor');
+      const textarea =
+        editor && editor.id
+          ? document.getElementById(editor.id.replace(/-ace-editor$/, ''))
+          : null;
+      return (
+        !!textarea &&
+        textarea.value === window.ace.edit(editor).session.getValue()
+      );
+    },
+    null,
+    { timeout: 15000 },
+  );
 });

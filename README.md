@@ -54,7 +54,8 @@ The demo content is a separate download: [Cucumber Demos](https://www.drupal.org
 ## Tests
 
 Automated functional testing with [webship-js](https://www.npmjs.com/package/webship-js) (Playwright and
-Cucumber-js):
+Cucumber-js) lives in `tests/`. `tests/README.md` has the full install, from a new DDEV site with its test
+accounts to a green run, and the test users:
 
 ```shell
 yarn install
