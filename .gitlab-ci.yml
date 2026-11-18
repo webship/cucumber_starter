@@ -16,7 +16,7 @@ include:
       - '/includes/include.drupalci.workflows.yml'
 
 variables:
-  _TARGET_PHP: '8.4'
+  _TARGET_PHP: '8.5'
   DRUPAL_CORE: &drupal_core '11.4.x-dev'
   # Display Builder, UI Suite and Media Directories have no stable release yet.
   MINIMUM_STABILITY_OVERRIDE: &minimum_stability 'dev'
